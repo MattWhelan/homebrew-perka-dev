@@ -2,6 +2,8 @@ require 'formula'
 
 class PerkaDev < Formula
   homepage 'https://perka.github.com/perka'
+  url 'https://github.com/MattWhelan/homebrew-perka-dev.git'
+  version '0.1'
 
   depends_on 'pcre'
   depends_on 'v8'
