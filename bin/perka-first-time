@@ -1,12 +1,12 @@
 #! /bin/bash
 
-if [ -z $1 ]; then
-  echo "Perka username required"
+if [ -z $2 ]; then
+  echo "Usage: perka-first-time <perkaUsername> <gerritUsername>"
   exit 2
 fi
 
 email="${1}@perka.com"
-gerrit_user=$1
+gerrit_user=$2
 
 gerrit_url="ssh://${gerrit_user}@cr.perka.com:29418/perka"
 github_url="git@github.com:perka/perka.git"
@@ -22,14 +22,14 @@ if [ ! -f $HOME/.ssh/id_rsa.pub ]; then
   ssh-keygen -t rsa -C ${email}
 fi
 
-if [ ! git_access_check $gerrit_url ]; then
-  cat $HOME/ssh/id_rsa.pub | pbcopy
+if ! git_access_check $gerrit_url; then
+  cat $HOME/.ssh/id_rsa.pub | pbcopy
   echo 'Public key copied.  Please add it to:'
   echo '  https://cr.perka.com/#/settings/ssh-keys'
   exit 3
 fi
 
-if [ ! git_access_check $github_url ]; then
+if ! git_access_check $github_url; then
   cat $HOME/ssh/id_rsa.pub | pbcopy
   echo 'Public key copied.  Please add it to:'
   echo '  https://github.com/settings/ssh'
@@ -51,10 +51,18 @@ if [ ! -f $HOME/.perkarc ]; then
   echo "export JAVA_HOME=\$(/usr/libexec/java_home -v 1.7)" >> ~/.perkarc
 #TODO: fastmvn
 
-  source $HOME/.perkarc
-
   echo "source \$HOME/.perkarc" >> .bashrc
 fi
+
+exit_msg=""
+if [ -z $WORKSPACE ]; then
+  source $HOME/.perkarc
+  exit_msg="Be sure to\
+  source $HOME/.perkarc"
+fi
+
+echo "Workspace is $WORKSPACE"
+
 
 # git clone
 if [ ! -d $WORKSPACE/.git ]; then
@@ -119,13 +127,16 @@ fi
 # first build: java and js
 cd $WORKSPACE/java
 #TODO: fastmvn
-if [ ! mvn clean install -DskipTests=true ]; then 
+if ! mvn clean install -DskipTests=true; then 
   echo 'Java build failed; bailing out.'
   exit 1
 fi
 
 cd $WORKSPACE/js
-if [ ! npm install && gulp gen && gulp ]; then
+if ! npm install && gulp gen && gulp; then
   echo 'JavaScript build failed; bailing out.'
   exit 1
 fi
+
+echo "Success"
+echo $exit_msg
