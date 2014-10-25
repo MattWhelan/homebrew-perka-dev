@@ -3,7 +3,7 @@ require 'formula'
 class PerkaDev < Formula
   homepage 'https://perka.github.com/perka'
   url 'https://github.com/MattWhelan/homebrew-perka-dev.git'
-  version '0.1'
+  version '0.11'
 
   depends_on 'pcre'
   depends_on 'v8'
@@ -19,5 +19,7 @@ class PerkaDev < Formula
 
     system "#{HOMEBREW_PREFIX}/bin/npm", "install", "-g", "gulp"
     system "#{HOMEBREW_PREFIX}/bin/npm", "install", "-g", "grunt-cli"
+
+    bin.install "bin/perka-first-time"
   end
 end
