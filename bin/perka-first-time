@@ -1,0 +1,131 @@
+#! /bin/bash
+
+if [ -z $1 ]; then
+  echo "Perka username required"
+  exit 2
+fi
+
+email="${1}@perka.com"
+gerrit_user=$1
+
+gerrit_url="ssh://${gerrit_user}@cr.perka.com:29418/perka"
+github_url="git@github.com:perka/perka.git"
+
+git_access_check() 
+{
+  git ls-remote $1 refs/heads/master > /dev/null
+}
+#Steps
+# SSH key
+
+if [ ! -f $HOME/.ssh/id_rsa.pub ]; then
+  ssh-keygen -t rsa -C ${email}
+fi
+
+if [ ! git_access_check $gerrit_url ]; then
+  cat $HOME/ssh/id_rsa.pub | pbcopy
+  echo 'Public key copied.  Please add it to:'
+  echo '  https://cr.perka.com/#/settings/ssh-keys'
+  exit 3
+fi
+
+if [ ! git_access_check $github_url ]; then
+  cat $HOME/ssh/id_rsa.pub | pbcopy
+  echo 'Public key copied.  Please add it to:'
+  echo '  https://github.com/settings/ssh'
+  exit 3
+fi
+
+# .perkarc
+if [ ! -d $HOME/perka ]; then
+  mkdir $HOME/perka
+fi
+if [ ! -f $HOME/.perkarc ]; then
+  echo "export WORKSPACE=\$HOME/perka" >> ~/.perkarc
+  echo "export ANDROID_HOME=\$WORKSPACE/dev/android/android-sdk-macosx" >> ~/.perkarc
+  echo "export MAVEN_OPTS=-Xmx2048M" >> ~/.perkarc
+  echo "export M2_HOME=\$WORKSPACE/dev/maven" >> ~/.perkarc
+  echo "export PATH=\$WORKSPACE/dev/bin:\${M2_HOME}/bin:\$ANDROID_HOME/platform-tools:\$PATH" >> ~/.perkarc
+  echo "export PATH=/Applications/Xcode.app/Contents/Developer/usr/libexec/git-core/:\$PATH" >> ~/.perkarc
+  echo "export PATH=\$M2_HOME/bin:\$PATH" >> ~/.perkarc
+  echo "export JAVA_HOME=\$(/usr/libexec/java_home -v 1.7)" >> ~/.perkarc
+#TODO: fastmvn
+
+  source $HOME/.perkarc
+
+  echo "source \$HOME/.perkarc" >> .bashrc
+fi
+
+# git clone
+if [ ! -d $WORKSPACE/.git ]; then
+  git clone $gerrit_url $WORKSPACE
+fi
+
+# git configuration
+cd $WORKSPACE
+if [ $(git config user.email) != $email ]; then
+  git config user.email $email
+fi
+if [ ! -f $WORKSPACE/.git/hooks/commit-msg ]; then
+  curl -Lo $WORKSPACE/.git/hooks/commit-msg https://cr.perka.com/tools/hooks/commit-msg && chmod 755 $WORKSPACE/.git/hooks/commit-msg
+fi
+
+# nginx
+if [ ! -f $WORKSPACE/dev/nginx/build/bin/nginx ]; then
+  cd $WORKSPACE
+  curl -O http://nginx.org/download/nginx-1.4.4.tar.gz
+  tar -zxf nginx-1.4.4.tar.gz
+  if [ ! -d nginx-1.4.4 ]; then
+    echo "Failed to download and extract nginx"
+    exit 5
+  fi
+  cd nginx-1.4.4
+  ./configure --prefix=$WORKSPACE/dev/nginx/build\
+    --without-http_fastcgi_module\
+    --without-http_scgi_module\
+    --sbin-path=$WORKSPACE/dev/nginx/build/bin/nginx\
+    --conf-path=$WORKSPACE/dev/nginx/build/nginx.conf\
+    --http-log-path=$WORKSPACE/dev/nginx/build/log/access.log\
+    --error-log-path=$WORKSPACE/dev/nginx/build/log/error.log\
+    --pid-path=$WORKSPACE/dev/nginx/build/log/nginx.pid\
+    --lock-path=$WORKSPACE/dev/nginx/build/log/nginx.lock\
+    --with-http_ssl_module\
+    --with-http_gzip_static_module\
+    --with-cc-opt="-Wno-deprecated-declarations"\
+    && make
+  echo "Installing nginx; requires root"
+  sudo make install
+  if [ ! -f $WORKSPACE/dev/nginx/build/bin/nginx ]; then
+    echo "Failed to build and install nginx"
+    exit 5
+  fi
+  cd ..
+  rm -r nginx-1.4.4 nginx-1.4.4.tar.gz
+fi
+
+# maven settings and .startup.json
+if [ ! -f $HOME/.m2/settings.xml ]; then
+#TODO: copy from $WORKSPACE/dev/defaults
+  echo set up maven settings
+  exit 4
+fi
+
+if [ ! -f $HOME/.startup.json ]; then
+#TODO: copy from $WORKSPACE/dev/defaults
+  echo set up startup.json
+  exit 4
+fi
+
+# first build: java and js
+cd $WORKSPACE/java
+#TODO: fastmvn
+if [ ! mvn clean install -DskipTests=true ]; then 
+  echo 'Java build failed; bailing out.'
+  exit 1
+fi
+
+cd $WORKSPACE/js
+if [ ! npm install && gulp gen && gulp ]; then
+  echo 'JavaScript build failed; bailing out.'
+  exit 1
+fi

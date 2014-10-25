@@ -17,7 +17,7 @@ class PerkaDev < Formula
     system "sudo", "gem", "install", "-v", "0.25.1", "scss-lint"
     system "sudo", "gem", "install", "hpricot", "premailer"
 
-    system "/usr/local/bin/npm", "install", "-g", "gulp"
-    system "/usr/local/bin/npm", "install", "-g", "grunt-cli"
+    system "#{HOMEBREW_PREFIX}/bin/npm", "install", "-g", "gulp"
+    system "#{HOMEBREW_PREFIX}/bin/npm", "install", "-g", "grunt-cli"
   end
 end
