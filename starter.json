@@ -1,0 +1,99 @@
+{
+    "jobs": [
+        {
+            "type": "crossbar",
+            "name": "crossbar",
+            "hostMap": {
+                "*": "development"
+            },
+            "commandArgs": [
+                "--defaultLogLevel=WARN"
+            ],
+            "requirements": {
+                "heapMB": 128
+            }
+        },
+        {
+            "type": "java",
+            "name": "monitor",
+            "artifactId": "locator-monitor",
+            "args": [
+                "com.getperka.locator.Monitor",
+                "--environment=development",
+                "--defaultLogLevel=WARN"
+            ],
+            "count": 1,
+            "requirements": {
+                "heapMB": 64
+            }
+        },
+        {
+            "type": "werk",
+            "name": "loyalty",
+            "artifactId": "loyalty",
+            "requirements": {
+                "heapMB": 512
+            },
+            "commandArgs": [
+                "--bootstrapUsers=CARD,CLOVER,COMMERCE,USER,COMMUNICATION,ASSET,VIEW",
+                "--verbose=true"
+            ],
+            "count": 1
+        },
+        {
+            "type": "werk",
+            "name": "clover-shard",
+            "artifactId": "clover-shard",
+            "requirements": {
+                "heapMB": 512
+            }
+        },
+        {
+            "type": "werk",
+            "name": "commerce-shard",
+            "artifactId": "commerce-shard",
+            "requirements": {
+                "heapMB": 512
+            },
+            "count": 1
+        },
+        {
+            "type": "werk",
+            "name": "communication-shard",
+            "artifactId": "communication-shard",
+            "requirements": {
+                "heapMB": 512
+            }
+        },
+        {
+            "type": "werk",
+            "name": "user-shard",
+            "artifactId": "user-shard",
+            "requirements": {
+                "heapMB": 512
+            },
+            "commandArgs": [
+                "--disableEmails=true"
+            ],
+            "count": 1
+        },
+        {
+            "type": "werk",
+            "name": "view-shard",
+            "artifactId": "view-shard",
+            "requirements": {
+                "heapMB": 512
+            },
+            "count": 0
+        },
+        {
+            "type": "werk",
+            "name": "card-shard",
+            "artifactId": "card-shard",
+            "requirements": {
+                "heapMB": 512
+            },
+            "count": 1
+        }
+    ]
+}
